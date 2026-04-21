@@ -2,8 +2,8 @@
 // CLI: pull — fetch collections from PocketBase and generate a schema.ts
 // ---------------------------------------------------------------------------
 
-import { writeFileSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve, relative } from 'node:path';
 import { PBAdminClient, type CollectionResponse, type FieldResponse, type PBClientConfig } from './client.js';
 import { log } from './log.js';
 
@@ -252,6 +252,7 @@ export async function pull(opts: PullOptions): Promise<void> {
 
   const source = generateSchemaSource(collections, opts.includeSystem ?? false);
   const outPath = resolve(opts.output);
+  mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, source, 'utf-8');
 
   const count = opts.includeSystem
