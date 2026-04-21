@@ -80,6 +80,14 @@ export default defineSchema({
 npx pocketforge push --url http://localhost:8090 --email admin@example.com --password secret
 ```
 
+You can also place connection settings in `.env.local` and omit the flags:
+
+```dotenv
+POCKETBASE_URL=http://localhost:8090
+POCKETBASE_SUPERUSER_EMAIL=admin@example.com
+POCKETBASE_SUPERUSER_PASSWORD=secret
+```
+
 ### 3. Generate types
 
 ```bash
@@ -151,6 +159,8 @@ npx pocketforge push [options]
 | `--delete-missing` | Delete collections not in the schema | `false` |
 | `--dry-run` | Preview the JSON payload without applying | `false` |
 
+Connection options can also be loaded from `.env.local`. Supported variables are `POCKETBASE_URL`, `POCKETBASE_TOKEN`, `POCKETBASE_SUPERUSER_TOKEN`, `POCKETBASE_EMAIL`, `POCKETBASE_SUPERUSER_EMAIL`, `POCKETBASE_PASSWORD`, `POCKETBASE_SUPERUSER_PASSWORD`, plus the same names with a `POCKETFORGE_` prefix.
+
 ### `pocketforge pull`
 
 Pull existing collections from PocketBase and generate a `schema.ts` file.
@@ -182,6 +192,8 @@ npx pocketforge generate [options]
 | `-o, --output <dir>` | Output directory for generated files | `pb_schema/generated` |
 | `--from-server` | Generate from server collections instead of local schema | `false` |
 | `-u, --url <url>` | PocketBase server URL (with `--from-server`) | — |
+
+When `--from-server` is used, the same `.env.local` connection variables are supported.
 
 ### `pocketforge dev`
 

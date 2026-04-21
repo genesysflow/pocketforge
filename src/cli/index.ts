@@ -3,23 +3,27 @@
 // ---------------------------------------------------------------------------
 
 import { Command } from 'commander';
+import pkg from '../../package.json';
 import { push } from './push.js';
 import { pull } from './pull.js';
 import { generate } from './generate.js';
 import { dev } from './dev.js';
 import { log } from './log.js';
+import { loadLocalEnv, resolveConnectionConfig } from './env.js';
 
 const program = new Command();
+
+loadLocalEnv();
 
 program
   .name('pocketforge')
   .description('PocketForge — TypeScript schema DSL and typed client generator for PocketBase')
-  .version('0.1.0');
+  .version(pkg.version);
 
 // -- Global options helper --
 function addConnectionOpts(cmd: Command): Command {
   return cmd
-    .option('-u, --url <url>', 'PocketBase server URL', 'http://localhost:8090')
+    .option('-u, --url <url>', 'PocketBase server URL')
     .option('-t, --token <token>', 'Superuser auth token')
     .option('-e, --email <email>', 'Superuser email')
     .option('-p, --password <password>', 'Superuser password');
@@ -35,11 +39,12 @@ addConnectionOpts(
     .option('--dry-run', 'Show what would be sent without applying', false),
 ).action(async (opts) => {
   try {
+    const connection = resolveConnectionConfig(opts);
     await push({
-      url: opts.url,
-      token: opts.token,
-      email: opts.email,
-      password: opts.password,
+      url: connection.url,
+      token: connection.token,
+      email: connection.email,
+      password: connection.password,
       schema: opts.schema,
       deleteMissing: opts.deleteMissing,
       dryRun: opts.dryRun,
@@ -59,11 +64,12 @@ addConnectionOpts(
     .option('--include-system', 'Include system collections', false),
 ).action(async (opts) => {
   try {
+    const connection = resolveConnectionConfig(opts);
     await pull({
-      url: opts.url,
-      token: opts.token,
-      email: opts.email,
-      password: opts.password,
+      url: connection.url,
+      token: connection.token,
+      email: connection.email,
+      password: connection.password,
       output: opts.output,
       includeSystem: opts.includeSystem,
     });
@@ -80,20 +86,21 @@ program
   .option('-s, --schema <path>', 'Path to schema file', 'pb_schema/schema.ts')
   .option('-o, --output <dir>', 'Output directory for generated files', 'pb_schema/generated')
   .option('--from-server', 'Generate types from server collections instead of local schema')
-  .option('-u, --url <url>', 'PocketBase server URL (for --from-server)', 'http://localhost:8090')
+  .option('-u, --url <url>', 'PocketBase server URL (for --from-server)')
   .option('-t, --token <token>', 'Superuser auth token (for --from-server)')
   .option('-e, --email <email>', 'Superuser email (for --from-server)')
   .option('-p, --password <password>', 'Superuser password (for --from-server)')
   .action(async (opts) => {
     try {
+      const connection = resolveConnectionConfig(opts);
       await generate({
         schema: opts.schema,
         output: opts.output,
         fromServer: opts.fromServer,
-        url: opts.url,
-        token: opts.token,
-        email: opts.email,
-        password: opts.password,
+        url: connection.url,
+        token: connection.token,
+        email: connection.email,
+        password: connection.password,
       });
     } catch (err) {
       log.error(err instanceof Error ? err.message : String(err));
@@ -111,13 +118,14 @@ addConnectionOpts(
     .option('--delete-missing', 'Delete collections not in the schema', false),
 ).action(async (opts) => {
   try {
+    const connection = resolveConnectionConfig(opts);
     await dev({
-      url: opts.url,
+      url: connection.url,
       schema: opts.schema,
       output: opts.output,
-      token: opts.token,
-      email: opts.email,
-      password: opts.password,
+      token: connection.token,
+      email: connection.email,
+      password: connection.password,
       deleteMissing: opts.deleteMissing,
     });
   } catch (err) {
