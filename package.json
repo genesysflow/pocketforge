@@ -54,5 +54,13 @@
     "codegen",
     "typed-client",
     "pocketforge"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/genesysflow/pocketforge.git"
+  },
+  "homepage": "https://github.com/genesysflow/pocketforge",
+  "bugs": {
+    "url": "https://github.com/genesysflow/pocketforge/issues"
+  }
 }
