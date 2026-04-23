@@ -218,29 +218,21 @@ export function schemaToJSON(
   schema: SchemaDefinition,
   collectionIdMap?: Record<string, string>,
 ): CollectionJSON[] {
-  const collections: CollectionJSON[] = [];
+  // Build the full name→ID map up front so relation fields can resolve
+  // targets regardless of import order — including collections being created
+  // in this same import. Existing collections keep their IDs; new ones get
+  // a deterministic ID derived from the collection name.
+  const nameToId = new Map<string, string>();
+  for (const name of Object.keys(schema)) {
+    const existingId = collectionIdMap?.[name];
+    nameToId.set(name, existingId ?? deterministicId(`collection/${name}`));
+  }
 
+  const collections: CollectionJSON[] = [];
   for (const [name, def] of Object.entries(schema)) {
     const json = convertSingleCollection(name, def);
-
-    // Preserve existing collection ID if available (for upsert)
-    if (collectionIdMap?.[name]) {
-      json.id = collectionIdMap[name];
-    }
-
+    json.id = nameToId.get(name)!;
     collections.push(json);
-  }
-
-  // Second pass: resolve relation field collectionId references
-  const nameToId = new Map<string, string>();
-  for (const col of collections) {
-    if (col.id) nameToId.set(col.name, col.id);
-  }
-  // Also add from provided map
-  if (collectionIdMap) {
-    for (const [name, id] of Object.entries(collectionIdMap)) {
-      nameToId.set(name, id);
-    }
   }
 
   for (const [name, def] of Object.entries(schema)) {
@@ -251,16 +243,16 @@ export function schemaToJSON(
     for (const field of col.fields) {
       if (field.type !== 'relation') continue;
 
-      // Find the original field definition to get the relation target
       const fields = (def as BaseCollectionDefinition | AuthCollectionDefinition).fields;
       const fieldDef = fields[field.name];
       if (!fieldDef?._relationTarget) continue;
 
-      const targetId = nameToId.get(fieldDef._relationTarget);
+      const targetId = nameToId.get(fieldDef._relationTarget) ?? collectionIdMap?.[fieldDef._relationTarget];
       if (targetId) {
         field.collectionId = targetId;
       } else {
-        // Use the collection name as fallback — PocketBase may resolve it
+        // Target isn't in the schema or the existing-id map — fall back to
+        // the name and let PocketBase surface the error.
         field.collectionId = fieldDef._relationTarget;
       }
     }

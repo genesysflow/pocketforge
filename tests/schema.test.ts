@@ -236,6 +236,31 @@ describe('schemaToJSON', () => {
     expect(col.id).toBe('def456');
   });
 
+  it('assigns deterministic IDs to new collections so same-import relations resolve', () => {
+    const schema = defineSchema({
+      posts: defineCollection({
+        type: 'base',
+        fields: { author: v.relationOne('users') },
+      }),
+      users: defineCollection({
+        type: 'auth',
+        fields: { name: v.text() },
+      }),
+    });
+
+    const json = schemaToJSON(schema);
+    const posts = json.find((c) => c.name === 'posts')!;
+    const users = json.find((c) => c.name === 'users')!;
+
+    expect(users.id).toBeTruthy();
+    expect(users.id).toHaveLength(15);
+
+    const authorField = posts.fields!.find((f) => f.name === 'author')!;
+    // Relation must resolve to the target collection's assigned ID, not its name
+    expect(authorField.collectionId).toBe(users.id);
+    expect(authorField.collectionId).not.toBe('users');
+  });
+
   it('converts indexes correctly', () => {
     const schema = defineSchema({
       posts: defineCollection({

@@ -1,6 +1,6 @@
 {
   "name": "pocketforge",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "TypeScript schema DSL and typed client generator for PocketBase",
   "type": "module",
   "main": "./dist/index.cjs",
