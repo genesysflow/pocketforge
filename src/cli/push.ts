@@ -83,9 +83,18 @@ export async function push(opts: PushOptions): Promise<void> {
     }
   }
 
+  // Include existing _pb_*_auth_ system collections in the payload so
+  // PocketBase doesn't try to recreate their indexes on re-import of
+  // auth collections (which would fail with "index already exists").
+  const sysAuthPattern = /^_pb_.+_auth_$/;
+  const sysAuthCollections = existing.filter((c) => sysAuthPattern.test(c.name));
+
   // Push
   await client.importCollections(
-    collections as Record<string, unknown>[],
+    [
+      ...(sysAuthCollections as unknown as Record<string, unknown>[]),
+      ...(collections as Record<string, unknown>[]),
+    ],
     opts.deleteMissing ?? false,
   );
 
