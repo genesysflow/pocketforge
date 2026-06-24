@@ -71,6 +71,34 @@ export class PBAdminClient {
     return data.items;
   }
 
+  /**
+   * POST /api/backups — create a full backup of pb_data (database + uploaded
+   * files) and return the backup name.
+   *
+   * PocketBase responds 204 with no body, so the name is generated/echoed
+   * client-side rather than read back from the response. `name` must satisfy
+   * PocketBase's `^[a-z0-9_-]+\.zip$` rule; when omitted a timestamped default
+   * is used.
+   */
+  async createBackup(name?: string): Promise<string> {
+    const backupName = name ?? defaultBackupName();
+    const res = await fetch(
+      `${this.baseUrl}/api/backups`,
+      {
+        method: 'POST',
+        headers: this.authHeaders(),
+        body: JSON.stringify({ name: backupName }),
+      },
+    );
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Backup failed (${res.status}): ${body}`);
+    }
+
+    return backupName;
+  }
+
   /** PUT /api/collections/import — batch import (upsert) collections */
   async importCollections(
     collections: Record<string, unknown>[],
@@ -90,6 +118,18 @@ export class PBAdminClient {
       throw new Error(`Import failed (${res.status}): ${body}`);
     }
   }
+}
+
+/**
+ * UTC-timestamped default backup name, e.g. `pocketforge-backup-20260624-153012.zip`.
+ * Matches PocketBase's `^[a-z0-9_-]+\.zip$` naming rule.
+ */
+export function defaultBackupName(date: Date = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  const stamp =
+    `${date.getUTCFullYear()}${p(date.getUTCMonth() + 1)}${p(date.getUTCDate())}` +
+    `-${p(date.getUTCHours())}${p(date.getUTCMinutes())}${p(date.getUTCSeconds())}`;
+  return `pocketforge-backup-${stamp}.zip`;
 }
 
 // ---------------------------------------------------------------------------

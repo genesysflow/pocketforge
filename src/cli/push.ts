@@ -13,6 +13,10 @@ export interface PushOptions extends PBClientConfig {
   schema: string;
   deleteMissing?: boolean;
   dryRun?: boolean;
+  /** Create a PocketBase backup before applying changes. */
+  backup?: boolean;
+  /** Explicit backup name (default: timestamped). Implies backup. */
+  backupName?: string;
   /** Pre-authenticated client (reused in dev mode to skip re-auth) */
   client?: PBAdminClient;
   /** Suppress banner/done (used in dev mode) */
@@ -88,6 +92,13 @@ export async function push(opts: PushOptions): Promise<void> {
   // auth collections (which would fail with "index already exists").
   const sysAuthPattern = /^_pb_.+_auth_$/;
   const sysAuthCollections = existing.filter((c) => sysAuthPattern.test(c.name));
+
+  // Backup before mutating anything, so a bad import can be rolled back.
+  // Skipped on --dry-run (which returns above).
+  if (opts.backup || opts.backupName) {
+    const name = await client.createBackup(opts.backupName);
+    log.success(`Backup created: ${name}`);
+  }
 
   // Push
   await client.importCollections(

@@ -6,6 +6,7 @@ import { Command } from 'commander';
 import pkg from '../../package.json';
 import { push } from './push.js';
 import { pull } from './pull.js';
+import { backup } from './backup.js';
 import { generate } from './generate.js';
 import { dev } from './dev.js';
 import { log } from './log.js';
@@ -36,7 +37,9 @@ addConnectionOpts(
     .description('Push TypeScript schema to PocketBase')
     .option('-s, --schema <path>', 'Path to schema file', 'pb_schema/schema.ts')
     .option('--delete-missing', 'Delete collections not in the schema', false)
-    .option('--dry-run', 'Show what would be sent without applying', false),
+    .option('--dry-run', 'Show what would be sent without applying', false)
+    .option('--backup', 'Create a backup before pushing', false)
+    .option('--backup-name <name>', 'Name for the pre-push backup (implies --backup)'),
 ).action(async (opts) => {
   try {
     const connection = resolveConnectionConfig(opts);
@@ -48,6 +51,8 @@ addConnectionOpts(
       schema: opts.schema,
       deleteMissing: opts.deleteMissing,
       dryRun: opts.dryRun,
+      backup: opts.backup,
+      backupName: opts.backupName,
     });
   } catch (err) {
     log.error(err instanceof Error ? err.message : String(err));
@@ -72,6 +77,28 @@ addConnectionOpts(
       password: connection.password,
       output: opts.output,
       includeSystem: opts.includeSystem,
+    });
+  } catch (err) {
+    log.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  }
+});
+
+// -- backup --
+addConnectionOpts(
+  program
+    .command('backup')
+    .description('Create a PocketBase backup (full pb_data snapshot)')
+    .option('-n, --name <name>', 'Backup name (default: timestamped)'),
+).action(async (opts) => {
+  try {
+    const connection = resolveConnectionConfig(opts);
+    await backup({
+      url: connection.url,
+      token: connection.token,
+      email: connection.email,
+      password: connection.password,
+      name: opts.name,
     });
   } catch (err) {
     log.error(err instanceof Error ? err.message : String(err));

@@ -9,6 +9,7 @@ TypeScript schema DSL and typed client generator for [PocketBase](https://pocket
 - **Automatic type generation** — Record, Create, and Update interfaces for every collection
 - **Typed client** — Generated `TypedPocketBase` with full autocomplete for collection names, fields, and operations
 - **Dev mode** — Watch your schema file and auto-push + regenerate types on save
+- **Safe migrations** — Snapshot the database before a push with `push --backup`, or back up on demand with `pocketforge backup`
 - **All 14 field types** — text, number, bool, email, url, date, select, relation, file, json, geoPoint, password, editor, autodate
 
 ## Install
@@ -158,6 +159,13 @@ npx pocketforge push [options]
 | `-s, --schema <path>` | Path to schema file | `pb_schema/schema.ts` |
 | `--delete-missing` | Delete collections not in the schema | `false` |
 | `--dry-run` | Preview the JSON payload without applying | `false` |
+| `--backup` | Create a backup before applying changes | `false` |
+| `--backup-name <name>` | Name for the pre-push backup (implies `--backup`) | timestamped |
+
+> Use `--backup` to snapshot the database right before a migration, so a bad
+> schema change can be rolled back from the PocketBase admin UI (Settings →
+> Backups). The backup is skipped on `--dry-run`. Ideal for CI/CD deploys:
+> `pocketforge push --backup`.
 
 Connection options can also be loaded from `.env.local`. Supported variables are `POCKETBASE_URL`, `POCKETBASE_TOKEN`, `POCKETBASE_SUPERUSER_TOKEN`, `POCKETBASE_EMAIL`, `POCKETBASE_SUPERUSER_EMAIL`, `POCKETBASE_PASSWORD`, `POCKETBASE_SUPERUSER_PASSWORD`, plus the same names with a `POCKETFORGE_` prefix.
 
@@ -177,6 +185,24 @@ npx pocketforge pull [options]
 | `-t, --token <token>` | Superuser auth token | — |
 | `-o, --output <path>` | Output schema file path | `pb_schema/schema.ts` |
 | `--include-system` | Include system collections | `false` |
+
+### `pocketforge backup`
+
+Create a full backup of `pb_data` (database + uploaded files) via PocketBase's
+backup API. Useful on its own or as a scheduled snapshot; `push --backup` runs
+the same operation inline before a migration.
+
+```bash
+npx pocketforge backup [options]
+```
+
+| Option | Description | Default |
+|---|---|---|
+| `-u, --url <url>` | PocketBase server URL | *required* |
+| `-e, --email <email>` | Superuser email | — |
+| `-p, --password <password>` | Superuser password | — |
+| `-t, --token <token>` | Superuser auth token | — |
+| `-n, --name <name>` | Backup name (must match `^[a-z0-9_-]+\.zip$`) | timestamped |
 
 ### `pocketforge generate`
 
